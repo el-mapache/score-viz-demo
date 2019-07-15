@@ -1,0 +1,33 @@
+{
+  "name": "hex-test-fork",
+  "version": "1.0.0",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel index.html src/**/* --open",
+    "build": "parcel build index.html"
+  },
+  "dependencies": {
+    "chroma": "0.0.1",
+    "chroma-js": "^2.0.4",
+    "hex-grid": "^2.0.2",
+    "honeycomb-grid": "2.1.0",
+    "isomorphic-ws": "^4.0.1",
+    "osc": "2.3.1",
+    "socket.io": "^2.2.0",
+    "svg.easing.js": "^2.0.0",
+    "svg.filter.js": "^2.0.2",
+    "svg.js": "2.7.1",
+    "ws": "^7.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.5.4",
+    "@babel/plugin-transform-runtime": "^7.5.0",
+    "babel-preset-env": "^1.7.0",
+    "parcel-bundler": "^1.12.3",
+    "set-value": "^3.0.1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

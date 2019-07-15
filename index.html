@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Parcel Sandbox</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="flexboxgrid.min.css" type="text/css">
+    <link rel="stylesheet" href="fonts/fonts.css" type="text/css">
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body, p {
+        margin: 0;
+        border: 0;
+        outline: 0;
+      }
+
+      html, body {
+        height: 100%;
+        font-size: 10px;
+        width: 100%;
+        position: relative;
+      }
+
+      #ripple, #svg-canvas {
+        height: 100%;
+        width: 100%;
+      }
+
+      #series-info {
+        border-top: 2px solid #131313;
+        visibility: hidden;
+      }
+
+      #series-info .left {
+        display: flex;
+        padding-left: 0 !important;
+      }
+
+      #series-info .right {
+        width: 25%;
+      }
+
+      .left, .right {
+        border-bottom: 1px solid #131313;
+        flex-direction: column;
+        justify-content: center;
+        line-height: 5rem;
+      }
+
+      .grid-row {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .absolute {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      .opacity-08 {
+       opacity: 0.8; 
+      }
+      
+      .vertical-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto;
+      }
+
+      .vertical-text-center {
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .count-box {
+        text-align: center;
+        background: #353535;
+        color: white;
+        font-size: 1.75rem;
+      }
+
+      .counter {
+        font-family: 'ibm_plex_mono_mediumregular', monospace;
+      }
+
+      .text-heading {
+        font-family: 'source_serif_probold', serif;
+        font-size: 1.75rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="ripple" class="absolute vertical-center"></div>
+      <section id="series-info" class="row">
+        
+        <section class="col-lg-3">
+          <div class="row">
+            <div class="left col-lg-12">
+              <div class="row">
+                <div class="col-lg-8">
+                  <p class="center text-heading" style="font-weight: bold;font-size: 2.25rem">Series</p>
+                </div>
+                <div class="col-lg-4 count-box">
+                  <p id="series-counter" class="counter"></p> 
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="col-lg-4 col-lg-offset-5">
+          <div class="row">
+            <div class="right col-lg-12">
+              <div class="row">
+                <div class="col-lg-3 count-box">
+                  <p id="sync-counter" class="counter">0</p> 
+                </div>
+                <div class="col-lg-9">
+                  <p class="center text-heading">Sync Points</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+      <div id="svg-canvas" class="vertical-center" style="min-width: 600px; min-height:300px"></div>
+    </div>
+    <script src="src/index.js"></script>
+  </body>
+</html>
