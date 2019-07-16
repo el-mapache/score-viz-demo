@@ -30,8 +30,8 @@ print("_F going to run in mode? ",args.run)
 
 
 def new_client(client, server):
-	server.send_message_to_all('{"message":"A new client has joined"}')
 	print("New client has joined",client)
+	server.send_message_to_all('{"message":"A new client has joined"}')
 
 
 	if args.delay:
@@ -83,8 +83,12 @@ def new_client(client, server):
 					msg = '{{ "type": "reveal", "data": {0} }}'.format(round(j*0.1,2))
 					server.send_message_to_all(msg)
 					time.sleep(0.5)
+					msg = '{{ "type": "rtt", "data": {0} }}'.format(r.randint(10,20))
+					server.send_message_to_all(msg)
 
-				server.send_message_to_all("Finished loop - restarting in {0} seconds".format(loop_delay))
+				msg = '{{ "type": "end"}}'
+				server.send_message_to_all(msg)
+				server.send_message_to_all('{{"message":"Finished loop - restarting in {0} seconds"}}'.format(loop_delay))
 
 			time.sleep(2)
 
@@ -94,11 +98,13 @@ def new_client(client, server):
 
 
 def client_left(client,server):
-	print("Client has left. Ignore any errors, server will continue",client)
+	print("Client has left. Ignore any errors, server will continue",client,server)
+
 
 
 server = WebsocketServer(port, host='127.0.0.1', loglevel=logging.INFO)
 server.set_fn_new_client(new_client)
-server.set_fn_client_left(client_left)
+server.set_fn_client_left(client_left)	
 server.run_forever()
+
 

@@ -14,12 +14,20 @@ const buildFilter = ({ svg, id, type, attrs }) => {
 
   filter.node.appendChild(fe.node);
 
-  return function attachTo(element)  {
-    element.attr({ filter: `url(#${id})` });
+  return {
+    attachTo(element)  {
+      element.attr({ filter: `url(#${id})` });
+    },
+    removeFrom(element) {
+      setTimeout(() => { element.attr({ filter: '' }) }, 155)
+    }
   };
 };
 
 const IMG_SCALE_FACTOR = 1.25;
+const appendChildren = (root, ...children) => {
+  children.forEach(child => root.node.appendChild(child.node));
+};
 
 const perlin = (svg) => {
   const id = 'perlin';
@@ -54,10 +62,7 @@ const perlin = (svg) => {
   const blend = svg.element('feBlend').attr(blendAttrs)
   const composite = svg.element('feComposite').attr(compositeAttrs)
   const composite2 = svg.element('feComposite').attr(compose2Attrs)
-  filter.node.appendChild(fe.node);
-  filter.node.appendChild(composite.node);
-  filter.node.appendChild(composite2.node);
-  filter.node.appendChild(blend.node);
+  appendChildren(filter, fe, composite, composite2, blend);
 
   return (element) => element.attr({ filter: `url(#${id})` });
 }
@@ -66,7 +71,8 @@ const messageTypes = {
   MARKER: 'marker',
   REVEAL: 'reveal',
   SERIES: 'series',
-  RTT: 'rtt'
+  RTT: 'rtt',
+  END: 'end'
 };
 
 const bodyBox = document.getElementById('svg-canvas').getBoundingClientRect();
@@ -77,15 +83,18 @@ const imageContainer = SVG(document.getElementById('svg-canvas'));
 // TODO: rename
 const rippleContainer = SVG(document.getElementById('ripple'));
 
+
+
 const gaussianBlur = buildFilter({
   svg: imageContainer,
   id: 'gauss',
   type: 'feGaussianBlur',
-  attrs: { stdDeviation: '1' }
+  attrs: { stdDeviation: 3 }
 });
 
 const syncCounterEl = document.getElementById('sync-counter');
 const seriesCounterEl = document.getElementById('series-counter');
+const latencyCounterEl = document.getElementById('latency-counter');
 
 const paletteA = '#e55d87';
 const paletteB = '#5fc3e4';
@@ -157,12 +166,33 @@ const loadImages = (...images) => {
   });
 };
 
+let baseImageRef;
+let maskingImageRef;
+
 const runDisplayImages = (series, phrase) => {
   return loadImages(series, phrase).then((images) => {
     const [ baseImage, maskingImage ] = images;
     const baseImageBounds = baseImage.node.getBoundingClientRect();
     const imageDisplayOffset = centerElement(bodyBox, baseImageBounds);
     
+    baseImageRef = baseImage;
+    maskingImageRef = maskingImage;
+    
+    // const f = new SVG.Filter();
+    // const t = new SVG.TurbulenceEffect("0.07 0.01", "5", "2", "stitch", "turbulence");
+    // const d = new SVG.DisplacementMapEffect('SourceGraphic', t.result(), "9.82881e-13", "R", "B");
+
+    // f.node.appendChild(t.node);
+    // f.node.appendChild(d.node);
+    // imageContainer.node.appendChild(f.node)
+
+    // baseImageRef.filter(f);
+    // baseImageRef.filter(function(add) {
+    //   add
+    //     .turbulence(
+    //     .displacementMap(add.$source, "9.82881e-13", "R", "B");
+    // });
+   
     hexagons.translate(
       imageDisplayOffset.x,
       imageDisplayOffset.y
@@ -191,10 +221,11 @@ const runDisplayImages = (series, phrase) => {
     )
     .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
     
-    // Position DOM nodes relative to the image. We do this after load because we don't know how large
-    // the image is, and thus we wouldn't know where to place it
-    document.getElementById('series-info')
-      .setAttribute('style', `width: ${baseImageBounds.width}px; visibility: visible; position: absolute; top: ${imageDisplayOffset.y - 100}px; left: ${imageDisplayOffset.x + 10}px`);
+    // Position DOM nodes relative to the image. We do this after load because we don't know how
+    // large the image is, and thus we wouldn't know where to place it
+    const seriesInfoEl = document.getElementById('series-info');
+
+    seriesInfoEl.setAttribute('style', `width: ${baseImageBounds.width}px; visibility: visible; position: absolute; top: 120px; left: ${imageDisplayOffset.x}px`);
 
     /**
      * formula to center text in an element
@@ -252,40 +283,55 @@ const runRevealAnimation = (percentToReveal, hexagons, imageMask, maskProps) => 
   });
 };
 
-const square = rippleContainer
-  .rect(bodyBox.width, bodyBox.height)
-  .opacity(0)
-  .style({
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%'
-  });
+const fullscreenBox = svg =>
+  svg.rect(bodyBox.width, bodyBox.height)
+    .opacity(0)
+    .style({
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%'
+    });
+
+const square = fullscreenBox(rippleContainer).style({ 'z-index': 0 });
+const blackFrame = fullscreenBox(rippleContainer).style({'z-index': 1000});
 
 perlin(imageContainer)(square);
+
+const flashBlack = () => {
+  return new Promise((resolve, _) => {
+    blackFrame
+      .animate(1, '-')
+      .opacity(1)
+      .animate(1, '-', 100)
+      .opacity(0)
+      
+      squareMarker()
+
+      return resolve();
+  });
+};
 
 const squareMarker = () => {
   return new Promise((resolve, _) => {
     square
-      .animate(100, '-')
       .fill({ color: rippleColorPalette.takeRandom() })
       .opacity(0.5)
+      .animate(1200, '<')
+      .opacity(0);
       
-      .after(function() {
-        this.animate(1200, '<>').opacity(0)
-        return resolve();
-      });
+      return resolve();
     });
 };
 
 const pq = PriorityQueue({ id: 'pq1'});
 let hasSeries = false;
 window.pq = pq;
-
+//runDisplayImages('series1', 'phrase1')
 const socket = connect();
+let gaussf;
 
-//runDisplayImages('series1', 'phrase1');
 socket.listen((message) => {
   const payload = parseJSON(message.data);
 
@@ -297,14 +343,39 @@ socket.listen((message) => {
   
   switch(type) {
     case messageTypes.MARKER:
-      pq.pushHighPriority(squareMarker, null, data);
-      syncCounterEl.textContent = Number(syncCounterEl.textContent) + 1;
+      gaussianBlur.attachTo(baseImageRef);
+      gaussianBlur.attachTo(maskingImageRef);
+
+      // baseImageRef.filter(function(add) {
+      //   gaussf = add.gaussianBlur(0);
+      // });
+      //gaussf.animate(100).attr({ stdDeviation: 5 });
+      pq.pushHighPriority(flashBlack, null);
+      pq.pushHighPriority(function updateSyncMarkers() {
+        syncCounterEl.textContent = data;
+        return Promise.resolve()
+      });
+      pq.pushLowPriority(function() {
+        return new Promise((resolve, reject) => {
+          gaussianBlur.removeFrom(baseImageRef);
+          gaussianBlur.removeFrom(maskingImageRef);
+          //gaussf.animate(2000).attr({ stdDeviation: 0 })
+          return resolve();
+        });
+      });
       break;
     case messageTypes.REVEAL:
       if (data === 1) {
         socket.unlisten();
       }
-      pq.pushLowPriority(runRevealAnimation, null, data, hexagonsInImage, hexImageMask, visibleMaskProps);
+      pq.pushLowPriority(
+        runRevealAnimation,
+        null,
+        data,
+        hexagonsInImage,
+        hexImageMask,
+        visibleMaskProps
+      );
       break;
     case messageTypes.SERIES:
       !hasSeries && pq.pushHighPriority(runDisplayImages, null, data, data.replace('series', 'phrase'));
@@ -312,7 +383,10 @@ socket.listen((message) => {
       hasSeries = true;
       break;
     case messageTypes.RTT:
-      console.log(data);
+      latencyCounterEl.textContent = data
+      break;
+    case messageTypes.END:
+      pq.flush();
       break;
     default:
       console.warn('Unknown message type :: ', data);

@@ -106,6 +106,7 @@ class Queue {
       return itemToProcess().then(this.handleDone);
     } else if (!this.workersAvailable()) {
       this.log("Workers unavailable");
+      this.dequeue();
     } else if (!this.length()) {
       this.log("No work to perform");
       return Promise.resolve();
@@ -150,22 +151,25 @@ const PriorityQueue = ({ id }) => {
       busy() {
         return hasHighPriorityWork();
       },
+      flush() {
+        lowPriority.process();
+      },
       pushHighPriority(handler, context = null, ...args) {
         // if a new high priority item is added while the queue is processing
         // pause execution of the low priority queue. the next call to process
         // will then handle the next high priority item(s)
-        highPriorityFinished = false;
         lowPriority.pause();
+        highPriorityFinished = false;
         addToPriorityQueue(highPriority, handler, context, args);        
         
-        if (!highPriority.isWorking()) {
+        if (highPriority.workersAvailable()) {
           this.process();
         }
       },
       pushLowPriority(handler, context = null, ...args) {
         addToPriorityQueue(lowPriority, handler, context, args);
 
-        if (!hasHighPriorityWork() && !lowPriority.isWorking()) {
+        if (!hasHighPriorityWork() && lowPriority.workersAvailable()) {
           lowPriority.process();
         }
       },
@@ -175,6 +179,7 @@ const PriorityQueue = ({ id }) => {
         }
 
         if (!hasHighPriorityWork()) {
+          lowPriority.resume();
           return lowPriority.process();
         }
 

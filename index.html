@@ -29,8 +29,12 @@
       }
 
       #series-info {
-        border-top: 2px solid #131313;
+        /* border-top: 2px solid #131313; */
         visibility: hidden;
+      }
+
+      #series {
+        padding-bottom: .75rem; 
       }
 
       #series-info .left {
@@ -78,10 +82,11 @@
       }
 
       .count-box {
-        text-align: center;
-        background: #353535;
+        background: #363636;
         color: white;
         font-size: 1.75rem;
+        text-align: center;
+        z-index: -1
       }
 
       .counter {
@@ -92,42 +97,52 @@
         font-family: 'source_serif_probold', serif;
         font-size: 1.75rem;
       }
+
+      .text-heading.large {
+        font-size: 3rem;
+      }
     </style>
   </head>
 
   <body>
     <div id="ripple" class="absolute vertical-center"></div>
-      <section id="series-info" class="row">
-        
-        <section class="col-lg-3">
-          <div class="row">
-            <div class="left col-lg-12">
-              <div class="row">
-                <div class="col-lg-8">
-                  <p class="center text-heading" style="font-weight: bold;font-size: 2.25rem">Series</p>
-                </div>
-                <div class="col-lg-4 count-box">
-                  <p id="series-counter" class="counter"></p> 
-                </div>
-              </div>
-            </div>
-          </div>
+      <section id="series-info">
+        <section id="series" class="row">
+          <p class="text-heading large">Series <span id="series-counter"></span></p>
         </section>
 
-        <section class="col-lg-4 col-lg-offset-5">
-          <div class="row">
-            <div class="right col-lg-12">
+          <section class="row" style="border-top: 2px solid #131313;">
+            <div class="col-lg-3">
               <div class="row">
-                <div class="col-lg-3 count-box">
-                  <p id="sync-counter" class="counter">0</p> 
-                </div>
-                <div class="col-lg-9">
-                  <p class="center text-heading">Sync Points</p>
+                <div class="left col-lg-12">
+                  <div class="row">
+                    <div class="col-lg-8">
+                      <p class="center text-heading">Latency</p>
+                    </div>
+                    <div class="col-lg-4 count-box">
+                      <p id="latency-counter" class="counter">-</p> 
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+
+            <div class="col-lg-4 col-lg-offset-5">
+              <div class="row">
+                <div class="right col-lg-12">
+                  <div class="row">
+                    <div class="col-lg-3 count-box">
+                      <p id="sync-counter" class="counter">0</p> 
+                    </div>
+                    <div class="col-lg-9">
+                      <p class="center text-heading">Sync Points</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            
+          </section>
+        </div>
       </section>
       <div id="svg-canvas" class="vertical-center" style="min-width: 600px; min-height:300px"></div>
     </div>

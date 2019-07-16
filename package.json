@@ -4,6 +4,7 @@
   "main": "index.html",
   "scripts": {
     "start": "parcel index.html src/**/* --open",
+    "server": "python ws_server-v1.py --port=9999 --run=loop",
     "build": "parcel build index.html"
   },
   "dependencies": {
