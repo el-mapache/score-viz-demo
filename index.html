@@ -10,6 +10,10 @@
         box-sizing: border-box;
       }
 
+      section {
+        display: block;
+      }
+
       html, body, p {
         margin: 0;
         border: 0;
@@ -23,13 +27,14 @@
         position: relative;
       }
 
-      #ripple, #svg-canvas {
+      #ripple {
         height: 100%;
         width: 100%;
       }
 
       #series-info {
-        /* border-top: 2px solid #131313; */
+        margin-bottom: 4rem;
+        width: 100%;
         visibility: hidden;
       }
 
@@ -69,9 +74,7 @@
       }
       
       .vertical-center {
-        display: flex;
         justify-content: center;
-        align-items: center;
         margin: 0 auto;
       }
 
@@ -106,46 +109,51 @@
 
   <body>
     <div id="ripple" class="absolute vertical-center"></div>
-      <section id="series-info">
-        <section id="series" class="row">
+    <div style="height: 100vh;display: flex;align-items: center;justify-content: center;flex-wrap:wrap; flex-direction:column;">
+    
+    <section id="series-info" class="container-fluid">
+      <div class="row">
+        <section id="series" class="col-xs-12" style="padding-left: 0 !important;">
           <p class="text-heading large">Series <span id="series-counter"></span></p>
         </section>
-
-          <section class="row" style="border-top: 2px solid #131313;">
-            <div class="col-lg-3">
-              <div class="row">
-                <div class="left col-lg-12">
-                  <div class="row">
-                    <div class="col-lg-8">
-                      <p class="center text-heading">Latency</p>
-                    </div>
-                    <div class="col-lg-4 count-box">
-                      <p id="latency-counter" class="counter">-</p> 
-                    </div>
-                  </div>
-                </div>
-              </div>
+      </div>
+      <section class="row" style="border-top: 2px solid #131313;">
+        <div class="left col-xs-3">
+          <div class="row">
+            <div class="col-xs-8">
+              <p class="center text-heading">Latency</p>
+            </div>           
+            <div class="col-xs-4 count-box">
+              <p id="latency-counter" class="counter">-</p> 
             </div>
+          </div>
+        </div>
 
-            <div class="col-lg-4 col-lg-offset-5">
-              <div class="row">
-                <div class="right col-lg-12">
-                  <div class="row">
-                    <div class="col-lg-3 count-box">
-                      <p id="sync-counter" class="counter">0</p> 
-                    </div>
-                    <div class="col-lg-9">
-                      <p class="center text-heading">Sync Points</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            
-          </section>
+        <div class="right col-xs-offset-5 col-xs-4 ">
+          <div class="row">
+            <div class="col-xs-3 count-box">
+              <p id="sync-counter" class="counter">0</p> 
+            </div>
+            <div class="col-xs-9">
+              <p class="center text-heading">Sync Points</p>
+            </div>
+          </div> 
         </div>
       </section>
-      <div id="svg-canvas" class="vertical-center" style="min-width: 600px; min-height:300px"></div>
-    </div>
+    </section>
+    <div id="svg-canvas" style="min-width: 600px;"></div>
+  
+</div>
     <script src="src/index.js"></script>
   </body>
 </html>
+<!-- 
+          
+   
+              
+            
+
+            
+       
+            
+          </section> -->

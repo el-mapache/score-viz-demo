@@ -24,7 +24,7 @@ const buildFilter = ({ svg, id, type, attrs }) => {
   };
 };
 
-const IMG_SCALE_FACTOR = 1.25;
+const IMG_SCALE_FACTOR = 1.5;
 const appendChildren = (root, ...children) => {
   children.forEach(child => root.node.appendChild(child.node));
 };
@@ -75,10 +75,11 @@ const messageTypes = {
   END: 'end'
 };
 
-const bodyBox = document.getElementById('svg-canvas').getBoundingClientRect();
+const canvasEl =  document.getElementById('svg-canvas');
+const bodyBox = canvasEl.getBoundingClientRect();
 
 // Initialize the SVG container elements
-const imageContainer = SVG(document.getElementById('svg-canvas'));
+const imageContainer = SVG(canvasEl);
 // sync marker animation container
 // TODO: rename
 const rippleContainer = SVG(document.getElementById('ripple'));
@@ -198,35 +199,27 @@ const runDisplayImages = (series, phrase) => {
       imageDisplayOffset.y
     )
     // move image to the back of the canvas
-    baseImage.translate(
-      imageDisplayOffset.x,
-      imageDisplayOffset.y
-    ).back().scale(IMG_SCALE_FACTOR,IMG_SCALE_FACTOR);
-    maskingImage.translate(
-      imageDisplayOffset.x,
-      imageDisplayOffset.y
-    ).scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR);
+    baseImage.back()
+    baseImage.translate(IMG_SCALE_FACTOR * 100, imageDisplayOffset.y + IMG_SCALE_FACTOR * 100).scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR);
+    maskingImage.translate(IMG_SCALE_FACTOR * 100, imageDisplayOffset.y + IMG_SCALE_FACTOR * 100).scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
 
     // Add a rectangle around the image to generate a border effect
     imageContainer.rect(
-      baseImageBounds.width,
-      baseImageBounds.height)
+      baseImageBounds.width * IMG_SCALE_FACTOR + 8,
+      baseImageBounds.height * IMG_SCALE_FACTOR + 8
+    )
     .fill({
       color: 'transparent'
     })
-    .stroke({ width: 6 })
-    .translate(
-      imageDisplayOffset.x,
-      imageDisplayOffset.y
-    )
-    .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
+    .stroke({ width: 8 })
+    
     
     // Position DOM nodes relative to the image. We do this after load because we don't know how
     // large the image is, and thus we wouldn't know where to place it
     const seriesInfoEl = document.getElementById('series-info');
 
-    seriesInfoEl.setAttribute('style', `width: ${baseImageBounds.width}px; visibility: visible; position: absolute; top: 120px; left: ${imageDisplayOffset.x}px`);
-
+    seriesInfoEl.setAttribute('style', `width: ${baseImageBounds.width}px; visibility: visible;`);
+    canvasEl.setAttribute('style', `height: ${baseImageBounds.height*IMG_SCALE_FACTOR + 8}px; min-width: 600px; width: ${baseImageBounds.width*IMG_SCALE_FACTOR + 8}px`)
     /**
      * formula to center text in an element
      * 
@@ -327,7 +320,6 @@ const squareMarker = () => {
 
 const pq = PriorityQueue({ id: 'pq1'});
 let hasSeries = false;
-window.pq = pq;
 //runDisplayImages('series1', 'phrase1')
 const socket = connect();
 let gaussf;
