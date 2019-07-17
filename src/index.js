@@ -25,6 +25,7 @@ const buildFilter = ({ svg, id, type, attrs }) => {
 };
 
 const IMG_SCALE_FACTOR = 1.5;
+const SCORE_STROKE_WIDTH = 8;
 const appendChildren = (root, ...children) => {
   children.forEach(child => root.node.appendChild(child.node));
 };
@@ -205,13 +206,11 @@ const runDisplayImages = (series, phrase) => {
 
     // Add a rectangle around the image to generate a border effect
     imageContainer.rect(
-      baseImageBounds.width * IMG_SCALE_FACTOR + 8,
-      baseImageBounds.height * IMG_SCALE_FACTOR + 8
+      baseImageBounds.width * IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH,
+      baseImageBounds.height * IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH
     )
-    .fill({
-      color: 'transparent'
-    })
-    .stroke({ width: 8 })
+    .fill({ color: 'transparent' })
+    .stroke({ width: SCORE_STROKE_WIDTH });
     
     
     // Position DOM nodes relative to the image. We do this after load because we don't know how
@@ -338,10 +337,6 @@ socket.listen((message) => {
       gaussianBlur.attachTo(baseImageRef);
       gaussianBlur.attachTo(maskingImageRef);
 
-      // baseImageRef.filter(function(add) {
-      //   gaussf = add.gaussianBlur(0);
-      // });
-      //gaussf.animate(100).attr({ stdDeviation: 5 });
       pq.pushHighPriority(flashBlack, null);
       pq.pushHighPriority(function updateSyncMarkers() {
         syncCounterEl.textContent = data;
@@ -351,15 +346,12 @@ socket.listen((message) => {
         return new Promise((resolve, reject) => {
           gaussianBlur.removeFrom(baseImageRef);
           gaussianBlur.removeFrom(maskingImageRef);
-          //gaussf.animate(2000).attr({ stdDeviation: 0 })
+
           return resolve();
         });
       });
       break;
     case messageTypes.REVEAL:
-      if (data === 1) {
-        socket.unlisten();
-      }
       pq.pushLowPriority(
         runRevealAnimation,
         null,
@@ -370,15 +362,18 @@ socket.listen((message) => {
       );
       break;
     case messageTypes.SERIES:
-      !hasSeries && pq.pushHighPriority(runDisplayImages, null, data, data.replace('series', 'phrase'));
+      pq.pushHighPriority(runDisplayImages, null, data, data.replace('series', 'phrase'));
       seriesCounterEl.textContent = data.replace('series', '');
-      hasSeries = true;
+
       break;
     case messageTypes.RTT:
       latencyCounterEl.textContent = data
       break;
     case messageTypes.END:
-      pq.flush();
+      pq.flush().then(() => {
+        latencyCounterEl.textContent = '-';
+        syncCounterEl.textContent = 0;
+      });
       break;
     default:
       console.warn('Unknown message type :: ', data);

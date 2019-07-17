@@ -68,7 +68,7 @@ class Queue {
   }
 
   process() {
-    if (this.paused || this.working) {
+    if (this.paused || !this.workersAvailable()) {
       return;
     }
 
@@ -152,7 +152,8 @@ const PriorityQueue = ({ id }) => {
         return hasHighPriorityWork();
       },
       flush() {
-        lowPriority.process();
+        debugger
+        return lowPriority.process();
       },
       pushHighPriority(handler, context = null, ...args) {
         // if a new high priority item is added while the queue is processing
