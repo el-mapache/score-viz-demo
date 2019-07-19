@@ -6,7 +6,7 @@ import connect from './socket';
 import ShuffledList from './shuffled-list';
 import PriorityQueue from './priority-queue';
 import makePalette from './palette';
-import { centerElement, parseJSON } from './utils'
+import { centerElement, parseJSON, getRandomBetween } from './utils'
 
 const buildFilter = ({ svg, id, type, attrs }) => {
   const filter = svg.element('filter').attr({ id });
@@ -30,44 +30,6 @@ const appendChildren = (root, ...children) => {
   children.forEach(child => root.node.appendChild(child.node));
 };
 
-const perlin = (svg) => {
-  const id = 'perlin';
-  const turbAttrs = {
-    baseFrequency: "1.8",
-    numOctaves: "3",
-    result: "noise",
-    type: "turbulence"
-  };
-  const blendAttrs = {
-    mode: 'multiply',
-    in: 'finalFilter',
-    in2: 'SourceGraphic'
-  };
-  const compositeAttrs = {
-    operator: "arithmetic",
-    in: "noise",
-    result: "compose",
-    k1: "0",
-    k2: "0.5",
-    k3: "0.1" 
-  };
-  const compose2Attrs = {
-    operator: "in",
-    in: "compose",
-    in2: "SourceGraphic",
-    result: "finalFilter"
-  };
-
-  const filter = svg.element('filter').attr({ id });
-  const fe = svg.element('feTurbulence').attr(turbAttrs);
-  const blend = svg.element('feBlend').attr(blendAttrs)
-  const composite = svg.element('feComposite').attr(compositeAttrs)
-  const composite2 = svg.element('feComposite').attr(compose2Attrs)
-  appendChildren(filter, fe, composite, composite2, blend);
-
-  return (element) => element.attr({ filter: `url(#${id})` });
-}
-
 const messageTypes = {
   MARKER: 'marker',
   REVEAL: 'reveal',
@@ -83,20 +45,12 @@ const bodyBox = canvasEl.getBoundingClientRect();
 const imageContainer = SVG(canvasEl);
 // sync marker animation container
 // TODO: rename
-const rippleContainer = SVG(document.getElementById('ripple'));
-
-
-
-const gaussianBlur = buildFilter({
-  svg: imageContainer,
-  id: 'gauss',
-  type: 'feGaussianBlur',
-  attrs: { stdDeviation: 3 }
-});
+const syncMarkerContainer = SVG(document.getElementById('ripple'));
 
 const syncCounterEl = document.getElementById('sync-counter');
 const seriesCounterEl = document.getElementById('series-counter');
 const latencyCounterEl = document.getElementById('latency-counter');
+const seriesInfoEl = document.getElementById('series-info');
 
 const paletteA = '#e55d87';
 const paletteB = '#5fc3e4';
@@ -170,6 +124,7 @@ const loadImages = (...images) => {
 
 let baseImageRef;
 let maskingImageRef;
+let stutterFilter;
 
 const runDisplayImages = (series, phrase) => {
   return loadImages(series, phrase).then((images) => {
@@ -180,29 +135,58 @@ const runDisplayImages = (series, phrase) => {
     baseImageRef = baseImage;
     maskingImageRef = maskingImage;
     
-    // const f = new SVG.Filter();
-    // const t = new SVG.TurbulenceEffect("0.07 0.01", "5", "2", "stitch", "turbulence");
-    // const d = new SVG.DisplacementMapEffect('SourceGraphic', t.result(), "9.82881e-13", "R", "B");
+    const f = new SVG.Filter();
+    const t = new SVG.TurbulenceEffect("0.07 0.01", "5", "2", "stitch", "turbulence");
+    const d = new SVG.DisplacementMapEffect('SourceGraphic', t.result(), "9.82881e-13", "R", "B");
+    const g = new SVG.GaussianBlurEffect(0);
+    const b = new SVG.BlendEffect(b, d.result());
 
-    // f.node.appendChild(t.node);
-    // f.node.appendChild(d.node);
-    // imageContainer.node.appendChild(f.node)
+    d.attr({ filterUnits: "userSpaceOnUse", scale: 0 });
 
-    // baseImageRef.filter(f);
-    // baseImageRef.filter(function(add) {
-    //   add
-    //     .turbulence(
-    //     .displacementMap(add.$source, "9.82881e-13", "R", "B");
-    // });
-   
+    f.node.appendChild(t.node);
+    f.node.appendChild(d.node);
+    f.node.appendChild(g.node);
+    f.node.appendChild(b.node);
+    imageContainer.node.appendChild(f.node);
+    
+    stutterFilter = {
+      addTo(element) {
+        element.attr({ filter: `url(#${f.id()})`});
+      },
+      animate() {
+        const scale = getRandomBetween(1, 25);
+        const numOctaves = getRandomBetween(1, 6);
+        g.animate(75).attr({ stdDeviation: 3 });
+        t.attr({ numOctaves })
+        d.animate(150, '<>').attr({ scale });
+        g.animate(75).attr({ stdDeviation: 0 });
+        d.animate(75, '<>').attr({ scale: 0 });
+      },
+      removeFrom(element) {
+        element.attr({ filter: '' });
+      }
+    };
+
+    stutterFilter.addTo(baseImageRef);
+ 
     hexagons.translate(
       imageDisplayOffset.x,
       imageDisplayOffset.y
+    );
+
+    baseImage.translate(
+      IMG_SCALE_FACTOR * 100,
+      imageDisplayOffset.y + IMG_SCALE_FACTOR * 100
     )
+    .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
     // move image to the back of the canvas
-    baseImage.back()
-    baseImage.translate(IMG_SCALE_FACTOR * 100, imageDisplayOffset.y + IMG_SCALE_FACTOR * 100).scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR);
-    maskingImage.translate(IMG_SCALE_FACTOR * 100, imageDisplayOffset.y + IMG_SCALE_FACTOR * 100).scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
+    .back();
+
+    maskingImage.translate(
+      IMG_SCALE_FACTOR * 100,
+      imageDisplayOffset.y + IMG_SCALE_FACTOR * 100
+    )
+    .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR);
 
     // Add a rectangle around the image to generate a border effect
     imageContainer.rect(
@@ -215,17 +199,8 @@ const runDisplayImages = (series, phrase) => {
     
     // Position DOM nodes relative to the image. We do this after load because we don't know how
     // large the image is, and thus we wouldn't know where to place it
-    const seriesInfoEl = document.getElementById('series-info');
-
     seriesInfoEl.setAttribute('style', `width: ${baseImageBounds.width}px; visibility: visible;`);
-    canvasEl.setAttribute('style', `height: ${baseImageBounds.height*IMG_SCALE_FACTOR + 8}px; min-width: 600px; width: ${baseImageBounds.width*IMG_SCALE_FACTOR + 8}px`)
-    /**
-     * formula to center text in an element
-     * 
-     * x == (elementWidth / 2) + elementXOffset - (textWidth / 2)
-     * y == ??
-     * 
-     */
+    canvasEl.setAttribute('style', `height: ${baseImageBounds.height*IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH}px; min-width: 600px; width: ${baseImageBounds.width*IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH}px`);
 
     hexagonsInImage = new ShuffledList(
       getMaskOverlap(
@@ -275,9 +250,9 @@ const runRevealAnimation = (percentToReveal, hexagons, imageMask, maskProps) => 
   });
 };
 
-const fullscreenBox = svg =>
+const fullscreenBox = (svg, opacity=0) =>
   svg.rect(bodyBox.width, bodyBox.height)
-    .opacity(0)
+    .opacity(opacity)
     .style({
       position: 'absolute',
       top: 0,
@@ -286,16 +261,14 @@ const fullscreenBox = svg =>
       height: '100%'
     });
 
-const square = fullscreenBox(rippleContainer).style({ 'z-index': 0 });
-const blackFrame = fullscreenBox(rippleContainer).style({'z-index': 1000});
-
-perlin(imageContainer)(square);
+const square = fullscreenBox(syncMarkerContainer).style({ 'z-index': 0 });
+const blackFrame = fullscreenBox(syncMarkerContainer).style({'z-index': 1000});
 
 const flashBlack = () => {
   return new Promise((resolve, _) => {
     blackFrame
       .animate(1, '-')
-      .opacity(1)
+      .opacity(0.8)
       .animate(1, '-', 100)
       .opacity(0)
       
@@ -318,10 +291,9 @@ const squareMarker = () => {
 };
 
 const pq = PriorityQueue({ id: 'pq1'});
-let hasSeries = false;
+
 //runDisplayImages('series1', 'phrase1')
 const socket = connect();
-let gaussf;
 
 socket.listen((message) => {
   const payload = parseJSON(message.data);
@@ -331,27 +303,20 @@ socket.listen((message) => {
   }
 
   const { type, data } = payload;
-  
+  console.log(type, payload)
   switch(type) {
     case messageTypes.MARKER:
-      gaussianBlur.attachTo(baseImageRef);
-      gaussianBlur.attachTo(maskingImageRef);
-
       pq.pushHighPriority(flashBlack, null);
+
       pq.pushHighPriority(function updateSyncMarkers() {
+        if (getRandomBetween(1, 2) % 2) {
+          stutterFilter.animate();
+        }
         syncCounterEl.textContent = data;
         return Promise.resolve()
       });
-      pq.pushLowPriority(function() {
-        return new Promise((resolve, reject) => {
-          gaussianBlur.removeFrom(baseImageRef);
-          gaussianBlur.removeFrom(maskingImageRef);
-
-          return resolve();
-        });
-      });
       break;
-    case messageTypes.REVEAL:
+    case messageTypes.REVEAL: 
       pq.pushLowPriority(
         runRevealAnimation,
         null,

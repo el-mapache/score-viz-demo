@@ -1,12 +1,34 @@
-import throttle from './throttle';
+const QueueFactory = (function() {
+  const initialState = {
+    maxWorkers: 1,
+    // time t wait before processing the next item in the queue
+    fnDelay: 0,
+    paused: false,
+    // should the queue begin processing immediately upon recieving an item?
+    eager: false
+  };
+
+  return function factory(options) {
+    const queueOptions = {
+      ...initialState,
+      ...options
+    };
+
+    return new Queue(queueOptions);
+  };
+})();
 
 class Queue {
-  constructor({ maxWorkers = 1, delay = 0, paused = false } = {}) {
-    this.maxWorkers = maxWorkers;
-    this.fnDelay = delay;
+  constructor(options) {
+    Object.entries(options).forEach(([key, value]) => {
+      this[key] = value;
+    });
+
+    // number of active workers processing queue items
     this.workers = 0;
     this.items = [];
-    this.paused = paused;
+    // is the queue currently processing an item
+    this.working = false;
 
     this.handleDone = this.handleDone.bind(this);
     this.dequeue = this.dequeue.bind(this);
@@ -21,8 +43,18 @@ class Queue {
     console.log("Queue :: ", message);
   }
 
+  allocateWorker() {
+    const workerCount = this.workers + 1;
+    this.workers = workerCount > this.maxWorkers ? this.maxWorkers : workerCount;
+  }
+
+  deallocateWorker() {
+    const workerCount = this.workers - 1;
+    this.workers = !workerCount ? 0 : workerCount;
+  }
+
   workersAvailable() {
-    return this.workers < this.maxWorkers;
+    return this.workers < this.maxWorkers && !this.isWorking();
   }
 
   pause() {
@@ -33,12 +65,16 @@ class Queue {
     this.paused = false;
   }
 
+  isWorking() {
+    return this.working;
+  }
+
   process() {
-    if (this.paused) {
+    if (this.paused || !this.workersAvailable()) {
       return;
     }
 
-    return this.dequeue();
+    return Promise.resolve(this.dequeue());
   }
 
   push(handler, context = null, ...args) {
@@ -50,33 +86,36 @@ class Queue {
 
     this.items.push(safeHandler);
 
-    this.process();
+    if (this.eager) {
+      this.process();
+    }
   }
 
   handleDone() {
-    this.workers = this.workers - 1;
-    
-    setTimeout(this.process, this.fnDelay);
+    this.deallocateWorker();
+    this.working = false;
+    return Promise.resolve(this.process());
   }
 
   dequeue() {
-    if (this.workersAvailable() && this.length()) {
-      const toProcess = throttle(this.items.shift(), this.fnDelay);
-
-      this.workers += 1;
-
-      toProcess.call(null, this.handleDone);
-    }
-    
-    if (!this.workers) {
-      this.log("Nothing to do or workers unavailable");
-      return;
-    }
-
     if (!this.length()) {
+      this.log("No work to perform");
       return Promise.resolve();
+    }
+
+    if (this.workersAvailable()) {
+      this.working = true;
+
+      const itemToProcess = this.items.shift();
+
+      this.allocateWorker();
+
+      return itemToProcess().then(this.handleDone);
+    } else {
+      this.log("Workers unavailable");
+      this.dequeue();
     }
   }
 }
 
-export default Queue;
+export default QueueFactory;

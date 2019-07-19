@@ -32,6 +32,15 @@
         width: 100%;
       }
 
+      #app-container {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap:wrap;
+        flex-direction:column;
+      }
+
       #series-info {
         margin-bottom: 4rem;
         width: 100%;
@@ -109,51 +118,39 @@
 
   <body>
     <div id="ripple" class="absolute vertical-center"></div>
-    <div style="height: 100vh;display: flex;align-items: center;justify-content: center;flex-wrap:wrap; flex-direction:column;">
-    
-    <section id="series-info" class="container-fluid">
-      <div class="row">
-        <section id="series" class="col-xs-12" style="padding-left: 0 !important;">
-          <p class="text-heading large">Series <span id="series-counter"></span></p>
-        </section>
-      </div>
-      <section class="row" style="border-top: 2px solid #131313;">
-        <div class="left col-xs-3">
-          <div class="row">
-            <div class="col-xs-8">
-              <p class="center text-heading">Latency</p>
-            </div>           
-            <div class="col-xs-4 count-box">
-              <p id="latency-counter" class="counter">-</p> 
+    <div id="app-container">    
+      <section id="series-info" class="container-fluid">
+        <div class="row">
+          <section id="series" class="col-xs-12" style="padding-left: 0 !important;">
+            <p class="text-heading large">Series <span id="series-counter"></span></p>
+          </section>
+        </div>
+        <section class="row" style="border-top: 2px solid #131313;">
+          <div class="left col-xs-3">
+            <div class="row">
+              <div class="col-xs-8">
+                <p class="center text-heading">Latency</p>
+              </div>           
+              <div class="col-xs-4 count-box">
+                <p id="latency-counter" class="counter">-</p> 
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="right col-xs-offset-5 col-xs-4 ">
-          <div class="row">
-            <div class="col-xs-3 count-box">
-              <p id="sync-counter" class="counter">0</p> 
-            </div>
-            <div class="col-xs-9">
-              <p class="center text-heading">Sync Points</p>
-            </div>
-          </div> 
-        </div>
+          <div class="right col-xs-offset-5 col-xs-4 ">
+            <div class="row">
+              <div class="col-xs-3 count-box">
+                <p id="sync-counter" class="counter">0</p> 
+              </div>
+              <div class="col-xs-9">
+                <p class="center text-heading">Sync Points</p>
+              </div>
+            </div> 
+          </div>
+        </section>
       </section>
-    </section>
-    <div id="svg-canvas" style="min-width: 600px;"></div>
-  
-</div>
+      <div id="svg-canvas" style="min-width: 600px;"></div>
+    </div>
     <script src="src/index.js"></script>
   </body>
 </html>
-<!-- 
-          
-   
-              
-            
-
-            
-       
-            
-          </section> -->
