@@ -54,7 +54,7 @@ class Queue {
   }
 
   workersAvailable() {
-    return this.workers < this.maxWorkers && !this.isWorking();
+    return (this.workers < this.maxWorkers);
   }
 
   pause() {
