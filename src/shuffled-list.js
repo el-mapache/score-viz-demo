@@ -1,5 +1,3 @@
-import { getRandomBetween } from './utils';
-
 /**
  * Fisher-Yates array
  * 
@@ -18,14 +16,6 @@ class ShuffledList extends Array {
 
   constructor(elements) {
     super(...elements);
-
-    // Only used to keep track of what elements were selected
-    // via the `takeRandom` method. Would like to find a cleaner
-    // way to add this functionality
-    this.selected = {};
-
-    this.samplePointer = 0;
-
     this.shuffle();
   }
 
@@ -36,7 +26,7 @@ class ShuffledList extends Array {
       const max = i + 1;
       // get a random (non-inclusive) index between
       // the current index and 0
-      const j = Math.floor(Math.random() * max);
+      const j = (Math.random() * max) | 0;
       
       // swap the current and random indicies
       [ this[i], this[j] ] = [ this[j], this[i] ];
@@ -45,6 +35,10 @@ class ShuffledList extends Array {
 
   isSampleOutOfBounds(nextPointer) {
     return nextPointer >= this.length;
+  }
+
+  reset() {
+    this.shuffle();
   }
 
   // once we've taken every item, dont let the user take more? is this correct?
@@ -62,27 +56,12 @@ class ShuffledList extends Array {
     }
 
     return selected;
-  }
+  }  
 
-  // love to do this without this goofy while loop
+  // Generate a new shuffled list from the existing list, and take the first element
+  // TODO: still want a clean way to sample each element once
   takeRandom() {
-    let nextIndex;
-
-    if (Object.keys(this.selected).length !== this.length) {
-      nextIndex = getRandomBetween(0, this.length);
-
-      while (this.selected[nextIndex]) {
-        nextIndex = getRandomBetween(0, this.length);
-      }
-    
-      this.selected[nextIndex] = true;
-    } else {
-      this.selected = {}
-      nextIndex = getRandomBetween(0, this.length);
-    }
-
-
-    return this[nextIndex];
+    return new ShuffledList(this.slice()).take(1)[0];
   }
 }
 

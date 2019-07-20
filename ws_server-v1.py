@@ -14,8 +14,8 @@ import random as r
 parser = argparse.ArgumentParser()
 parser.add_argument("--port", default=False,
     help="Server port to bind to. Default: 5000", required=False)
-parser.add_argument("--run", default=1,
-    help="1: run one time, loop: loop", required=True)
+parser.add_argument("--run", default="1",
+    help="1: run one time, loop: loop", required=False)
 parser.add_argument("--delay", default=1,
     help="loop delay, default 1 (second)", required=False)
 args = parser.parse_args()
@@ -86,14 +86,14 @@ def new_client(client, server):
 					msg = '{{ "type": "rtt", "data": {0} }}'.format(r.randint(10,20))
 					server.send_message_to_all(msg)
 
-				msg = '{{ "type": "end"}}'
+				msg = '{{ "type": "end" }}'.format()
 				server.send_message_to_all(msg)
 				server.send_message_to_all('{{"message":"Finished loop - restarting in {0} seconds"}}'.format(loop_delay))
 
-			time.sleep(2)
+			time.sleep(loop_delay)
 
 
-		time.sleep(1)
+		time.sleep(loop_delay)
 
 
 

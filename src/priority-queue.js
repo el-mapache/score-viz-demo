@@ -1,118 +1,4 @@
-const QueueFactory = (function() {
-  const initialState = {
-    maxWorkers: 1,
-    // time t wait before processing the next item in the queue
-    fnDelay: 0,
-    paused: false,
-    // should the queue begin processing immediately upon recieving an item?
-    eager: false
-  };
-
-  return function factory(options) {
-    const queueOptions = {
-      ...initialState,
-      ...options
-    };
-
-    return new Queue(queueOptions);
-  };
-})();
-
-class Queue {
-  constructor(options) {
-    Object.entries(options).forEach(([key, value]) => {
-      this[key] = value;
-    });
-
-    // number of active workers processing queue items
-    this.workers = 0;
-    this.items = [];
-    // is the queue currently processing an item
-    this.working = false;
-
-    this.handleDone = this.handleDone.bind(this);
-    this.dequeue = this.dequeue.bind(this);
-    this.process = this.process.bind(this);
-  }
-
-  length() {
-    return this.items.length;
-  }
-
-  log(message) {
-    console.log("Queue :: ", message);
-  }
-
-  allocateWorker() {
-    this.workers = this.workers + 1;
-  }
-
-  deallocateWorker() {
-    this.workers = this.workers - 1;
-  }
-
-  workersAvailable() {
-    return this.workers < this.maxWorkers && !this.isWorking();
-  }
-
-  pause() {
-    this.paused = true;
-  }
-
-  resume() {
-    this.paused = false;
-  }
-
-  isWorking() {
-    return this.working;
-  }
-
-  process() {
-    if (this.paused || !this.workersAvailable()) {
-      return;
-    }
-
-    return Promise.resolve(this.dequeue());
-  }
-
-  push(handler, context = null, ...args) {
-    let safeHandler = handler;
-
-    if (args.length) {
-      safeHandler = handler.bind.apply(handler, [context].concat(...args));
-    }
-
-    this.items.push(safeHandler);
-
-    if (this.eager) {
-      this.process();
-    }
-  }
-
-  handleDone() {
-    this.deallocateWorker();
-    this.working = false;
-    return Promise.resolve(this.process());
-  }
-
-  dequeue() {
-    if (this.workersAvailable() && this.length()) {
-      this.working = true;
-
-      const itemToProcess = this.items.shift();
-
-      this.allocateWorker();
-
-      return itemToProcess().then(this.handleDone);
-    } else if (!this.workersAvailable()) {
-      this.log("Workers unavailable");
-      this.dequeue();
-    } else if (!this.length()) {
-      this.log("No work to perform");
-      return Promise.resolve();
-    }
-  }
-}
+import QueueFactory from './queue';
 
 const PriorityQueue = ({ id }) => {
   const highPriority = QueueFactory({ eager: false });
@@ -130,10 +16,10 @@ const PriorityQueue = ({ id }) => {
   let highPriorityFinished;
 
   return {
-      hp() {
+      hpq() {
         return highPriority;
       },
-      lp() {
+      lpq() {
         return lowPriority;
       },
       id() {
@@ -152,7 +38,6 @@ const PriorityQueue = ({ id }) => {
         return hasHighPriorityWork();
       },
       flush() {
-        debugger
         return lowPriority.process();
       },
       pushHighPriority(handler, context = null, ...args) {
@@ -175,7 +60,7 @@ const PriorityQueue = ({ id }) => {
         }
       },
       process() {
-        if (locked) {
+        if (this.isLocked()) {
           return Promise.reject();
         }
 
