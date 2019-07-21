@@ -39,13 +39,41 @@ const seriesInfoEl = document.getElementById('series-info');
 const paletteA = '#e55d87';
 const paletteB = '#5fc3e4';
 
+const paletteC = '#ff512f'
+const paletteD = '#dd2476';
 
-const rippleColorPalette = new ShuffledList(makePalette({
-  colors: [ paletteA, paletteB ],
-  paletteSize: 4
-}));
+const paletteE = '#43cea2';
+const paletteF = '#185a9d';
 
+const colorPalettes = (() => {
+  const palettes = new ShuffledList([
+   new ShuffledList(makePalette({
+      colors: ['#e55d87', '#5fc3e4'],
+      size: 6
+    })),
+    new ShuffledList(makePalette({
+      colors: [ '#ff512f', '#dd2476' ],
+      size: 6
+    })),
+    new ShuffledList(makePalette({
+      colors: [ '#43cea2', '#185a9d' ],
+      size: 6
+    }))
+  ]);
 
+  return {
+    getColorPalette() {
+      return palettes.takeRandom();
+    }
+  };
+})();
+
+let rippleColorPalette;
+
+// = new ShuffledList(makePalette({
+//   colors: [ paletteC, paletteD ],
+//   paletteSize: 6
+// }));
 
 const visibleMaskProps = {
   opacity: 1,
@@ -149,9 +177,11 @@ function positionImagesAndMask(images) {
   [ baseImageRef, maskingImageRef ] = images;
   const baseImageBounds = baseImageRef.node.getBoundingClientRect();
   const imageDisplayOffset = centerElement(bodyBox, baseImageBounds);
-  hexImageMask = imageContainer.mask();
 
-  //stutterFilter.addTo(baseImageRef);
+  hexImageMask = imageContainer.mask();
+  rippleColorPalette = colorPalettes.getColorPalette();
+
+  stutterFilter.addTo(baseImageRef);
 
   hexagons.translate(
     imageDisplayOffset.x,

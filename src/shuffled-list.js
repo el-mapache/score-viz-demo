@@ -16,6 +16,7 @@ class ShuffledList extends Array {
 
   constructor(elements) {
     super(...elements);
+
     this.shuffle();
   }
 
@@ -58,10 +59,17 @@ class ShuffledList extends Array {
     return selected;
   }  
 
-  // Generate a new shuffled list from the existing list, and take the first element
-  // TODO: still want a clean way to sample each element once
   takeRandom() {
-    return new ShuffledList(this.slice()).take(1)[0];
+    const nextRandom = this.take(1);
+
+    if (!nextRandom.length) {
+      this.shuffle();
+
+      return this.take(1)[0];
+    }
+
+
+    return nextRandom[0];
   }
 }
 
