@@ -310,59 +310,86 @@ const squareMarker = () => {
 const pq = PriorityQueue({ id: 'pq1'});
 
 //runDisplayImages('series1', 'phrase1')
-connect()
-  .then(socket => {
-    socket.listen((message) => {
-      const payload = parseJSON(message.data);
-      
-      if (typeof payload === 'string') {
-        return;
-      }
-    
-      const { type, data } = payload;
-    
-      switch(type) {
-        case messageTypes.MARKER:
-          pq.pushHighPriority(flashBlack, null);
-    
-          pq.pushHighPriority(function updateSyncMarkers() {
-            if (getRandomBetween(1, 2) % 2) {
-              stutterFilter.animate();
-            }
-            syncCounterEl.textContent = data;
-            return Promise.resolve()
-          });
-          break;
-        case messageTypes.REVEAL: 
-          pq.pushLowPriority(
-            runRevealAnimation,
-            null,
-            data,
-            hexagonsInImage,
-            hexImageMask,
-            visibleMaskProps
-          );
-          break;
-        case messageTypes.SERIES:
-          baseImageRef && baseImageRef.remove();
-          maskingImageRef && maskingImageRef.remove();
-    
-          pq.pushHighPriority(runDisplayImages, null, data, data.replace('series', 'phrase'));
-          seriesCounterEl.textContent = data.replace('series', '');
-    
-          break;
-        case messageTypes.RTT:
-          latencyCounterEl.textContent = data
-          break;
-        case messageTypes.END:
-          pq.flush().then(() => {
-            latencyCounterEl.textContent = '-';
-            syncCounterEl.textContent = 0;
-          });
-          break;
-        default:
-          console.warn('Unknown message type :: ', data);
-          break;
-      }
+const socket = connect();
+
+
+
+
+
+// i don't understand js6 sorry.. you can rewrite it!
+//socket.listen((message) => {
+function onpoll(message) {
+
+  //const payload = parseJSON(message.data);
+  
+  const payload = parseJSON(message);
+  console.log("onpoll got",payload);
+
+  if (typeof payload === 'string') {
+    return;
+  }
+
+  const { type, data } = payload;
+
+  switch(type) {
+    case messageTypes.MARKER:
+      pq.pushHighPriority(flashBlack, null);
+
+      pq.pushHighPriority(function updateSyncMarkers() {
+        if (getRandomBetween(1, 2) % 2) {
+          stutterFilter.animate();
+        }
+        syncCounterEl.textContent = data;
+        return Promise.resolve()
+      });
+      break;
+    case messageTypes.REVEAL: 
+      pq.pushLowPriority(
+        runRevealAnimation,
+        null,
+        data,
+        hexagonsInImage,
+        hexImageMask,
+        visibleMaskProps
+      );
+      break;
+    case messageTypes.SERIES:
+      baseImageRef && baseImageRef.remove();
+      maskingImageRef && maskingImageRef.remove();
+
+      pq.pushHighPriority(runDisplayImages, null, data, data.replace('series', 'phrase'));
+      seriesCounterEl.textContent = data.replace('series', '');
+
+      break;
+    case messageTypes.RTT:
+      latencyCounterEl.textContent = data
+      break;
+    case messageTypes.END:
+      pq.flush().then(() => {
+        latencyCounterEl.textContent = '-';
+        syncCounterEl.textContent = 0;
+      });
+      break;
+    default:
+      console.warn('Unknown message type :: ', data);
+      break;
+  }
+}
+//});
+
+
+
+console.log("Start poll")
+var counter=1
+doPoll()
+
+function doPoll(){
+    // why is counter undefined here? 
+    $.post('https://source-elements.com/tests/static.php?last='+counter, function(data) {
+        //console.log(data);  // process results here
+        onpoll(data)
+        counter++;
+        setTimeout(doPoll,100);
+        
     });
-  });
+}

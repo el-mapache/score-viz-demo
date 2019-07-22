@@ -1,5 +1,6 @@
 export const socketConfigs = {
-  url: 'ws://127.0.0.1',
+  url: 'ws://localhost',
+  fallbackURL: 'https://source-elements.com/tests/static.php?last=',
   port: 9999
 };
 
