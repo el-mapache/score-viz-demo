@@ -4,6 +4,7 @@
   "main": "index.html",
   "scripts": {
     "start": "parcel index.html src/**/* --open",
+    "production": "(cd dist && python -m SimpleHTTPServer 1234)",
     "server": "python ws_server-v1.py --port=9999 --delay=2.5 --run=loop",
     "build": "parcel build index.html"
   },
