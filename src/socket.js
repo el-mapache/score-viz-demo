@@ -77,13 +77,13 @@ const webSocketAdapter = (() => {
 })();
 
 const makeConnection = ({ url, fallbackURL, port }) => {
-  return webSocketAdapter({ url, port })
-    .then((socket) => {
-      return Promise.resolve(socket);
-    })
-    .catch((e) => {
+  // return webSocketAdapter({ url, port })
+  //   .then((socket) => {
+  //     return Promise.resolve(socket);
+  //   })
+  //   .catch((e) => {
       return Promise.resolve(longPollAdapter({ url: fallbackURL }));
-    });
+    //});
   };
 
 let singleton;
