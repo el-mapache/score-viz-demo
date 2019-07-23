@@ -7,6 +7,7 @@ import ShuffledList from './shuffled-list';
 import PriorityQueue from './priority-queue';
 import makePalette from './palette';
 import { centerElement, parseJSON, getRandomBetween } from './utils'
+import { nextTick } from 'q';
 
 const IMG_SCALE_FACTOR = 1.5;
 const SCORE_STROKE_WIDTH = 8;
@@ -27,8 +28,6 @@ const bodyBox = canvasEl.getBoundingClientRect();
 
 // Initialize the SVG container elements
 const imageContainer = SVG(canvasEl);
-// sync marker animation container
-// TODO: rename
 const syncMarkerContainer = SVG(document.getElementById('ripple'));
 
 const syncCounterEl = document.getElementById('sync-counter');
@@ -233,7 +232,6 @@ const runDisplayImages = (series, phrase) => {
   return loadImages(series, phrase).then(positionImagesAndMask);
 };
 
-
 /**
  * 
  * @param {number} percentToReveal between 0 - 1 exclusive
@@ -242,16 +240,16 @@ let lastPercentageRevealed = 0;
 
 // realistically, the queue should wrap everything in a promise? how to handle
 // weirdo code like this with nested afters?
-const runRevealAnimation = (percentToReveal, hexagons, imageMask, maskProps) => {
+const runRevealAnimation = (percentToReveal, maskProps) => {
   return new Promise(function(resolve, _) {
     const percentageDelta = Number((percentToReveal - lastPercentageRevealed).toFixed(2));
     const numElementsToReveal = Math.floor(hexagonsInImage.length * percentageDelta);
-    const tilesToReveal = hexagons.take(numElementsToReveal);
+    const tilesToReveal = hexagonsInImage.take(numElementsToReveal);
 
     lastPercentageRevealed = percentToReveal;
-  
+
     tilesToReveal.forEach(({ svg, memory}) => {
-      imageMask.add(svg.opacity(0));
+      hexImageMask.add(svg.opacity(0));
       
       const { x, y } = memory.toPoint();
     
@@ -308,61 +306,163 @@ const squareMarker = () => {
 };
 
 const pq = PriorityQueue({ id: 'pq1'});
+let previousState = {};
+let changes = {};
 
 //runDisplayImages('series1', 'phrase1')
 connect()
   .then(socket => {
     socket.listen((message) => {
-      const payload = parseJSON(message.data);
-      
-      if (typeof payload === 'string') {
-        return;
+      /**
+       * {"series":{"type":"series","data":"series1","label":"Series 1"},
+       * "marker":{"type":"marker","data":"27"},
+       * "end":{"type":"end","data":"0"},
+       * "rtt":{"type":"rtt","data":"0.1"},
+       * "reveal":{"type":"reveal","data":"0.2"}}
+       */
+      for (const [label, value] of Object.entries(message)) {
+        const data = Number(value);
+        const lastValue = previousState[label];
+
+        if (data === lastValue) {
+          changes[label] = undefined;
+          continue;
+        }
+
+        changes[label] = data;
+        previousState[label] = data;
       }
-    
-      const { type, data } = payload;
-    
-      switch(type) {
-        case messageTypes.MARKER:
-          pq.pushHighPriority(flashBlack, null);
-    
-          pq.pushHighPriority(function updateSyncMarkers() {
-            if (getRandomBetween(1, 2) % 2) {
-              stutterFilter.animate();
+
+      if (changes[messageTypes.SERIES]) {
+        pq.flush().then(() => {
+          latencyCounterEl.textContent = '-';
+          syncCounterEl.textContent = 0;
+
+          baseImageRef && baseImageRef.remove();
+          maskingImageRef && maskingImageRef.remove();
+  
+          pq.pushHighPriority(runDisplayImages, null, `series${changes[messageTypes.SERIES]}`, `phrase${changes[messageTypes.SERIES]}`);
+          seriesCounterEl.textContent = changes[messageTypes.SERIES];
+
+          if (changes[messageTypes.MARKER]) {
+            if (changes[messageTypes.MARKER]) {
+              pq.pushHighPriority(flashBlack, null);
+            
+              pq.pushHighPriority(function updateSyncMarkers() {
+                if (getRandomBetween(1, 2) % 2) {
+                  stutterFilter.animate();
+                }
+                syncCounterEl.textContent = changes[messageTypes.MARKER];
+                return Promise.resolve()
+              });
             }
-            syncCounterEl.textContent = data;
-            return Promise.resolve()
-          });
-          break;
-        case messageTypes.REVEAL: 
+          }
+    
+          if (changes[messageTypes.REVEAL]) {
+            pq.pushLowPriority(
+              runRevealAnimation,
+              null,
+              changes[messageTypes.REVEAL],
+              visibleMaskProps
+            );
+          }
+    
+          if (changes[messageTypes.RTT]) {
+            latencyCounterEl.textContent = changes[messageTypes.RTT]
+          }
+    
+          if (changes[messageTypes.END]) {
+            pq.flush().then(() => {
+              latencyCounterEl.textContent = '-';
+              syncCounterEl.textContent = 0;
+            });
+          }
+        });
+      } else {
+        if (changes[messageTypes.MARKER]) {
+          if (changes[messageTypes.MARKER]) {
+            pq.pushHighPriority(flashBlack, null);
+          
+            pq.pushHighPriority(function updateSyncMarkers() {
+              if (getRandomBetween(1, 2) % 2) {
+                stutterFilter.animate();
+              }
+              syncCounterEl.textContent = changes[messageTypes.MARKER];
+              return Promise.resolve()
+            });
+          }
+        }
+
+        if (changes[messageTypes.REVEAL]) {
           pq.pushLowPriority(
             runRevealAnimation,
             null,
-            data,
-            hexagonsInImage,
-            hexImageMask,
+            changes[messageTypes.REVEAL],
             visibleMaskProps
           );
-          break;
-        case messageTypes.SERIES:
-          baseImageRef && baseImageRef.remove();
-          maskingImageRef && maskingImageRef.remove();
-    
-          pq.pushHighPriority(runDisplayImages, null, data, data.replace('series', 'phrase'));
-          seriesCounterEl.textContent = data.replace('series', '');
-    
-          break;
-        case messageTypes.RTT:
-          latencyCounterEl.textContent = data
-          break;
-        case messageTypes.END:
+        }
+
+        if (changes[messageTypes.RTT]) {
+          latencyCounterEl.textContent = changes[messageTypes.RTT]
+        }
+
+        if (changes[messageTypes.END]) {
           pq.flush().then(() => {
             latencyCounterEl.textContent = '-';
             syncCounterEl.textContent = 0;
           });
-          break;
-        default:
-          console.warn('Unknown message type :: ', data);
-          break;
+        }
       }
+
+        
+    //     switch(label) {
+    //       case messageTypes.MARKER:
+    //         pq.pushHighPriority(flashBlack, null);
+      
+    //         pq.pushHighPriority(function updateSyncMarkers() {
+    //           if (getRandomBetween(1, 2) % 2) {
+    //             stutterFilter.animate();
+    //           }
+    //           syncCounterEl.textContent = data;
+    //           return Promise.resolve()
+    //         });
+    //         break;
+    //       case messageTypes.REVEAL: 
+    //         pq.pushLowPriority(
+    //           runRevealAnimation,
+    //           null,
+    //           data,
+    //           hexagonsInImage,
+    //           hexImageMask,
+    //           visibleMaskProps
+    //         );
+    //         break;
+    //       case messageTypes.SERIES:
+    //         baseImageRef && baseImageRef.remove();
+    //         maskingImageRef && maskingImageRef.remove();
+
+    //         pq.pushHighPriority(runDisplayImages, null, `series${data}`, `phrase${data}`);
+    //         seriesCounterEl.textContent = data;
+
+    //         break;
+    //       case messageTypes.RTT:
+    //         latencyCounterEl.textContent = data
+    //         break;
+    //       case messageTypes.END:
+    //         if (data) {
+    //           debugger
+    //           pq.flush().then(() => {
+    //             latencyCounterEl.textContent = '-';
+    //             syncCounterEl.textContent = 0;
+    //           });
+    //         }
+    //         break;
+    //       default:
+    //         console.warn('Unknown message type :: ', data);
+    //         break;
+    //     }
+    //   }
+      
+    // });
     });
   });

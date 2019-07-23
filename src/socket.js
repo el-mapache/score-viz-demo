@@ -6,19 +6,20 @@ const longPollAdapter = ({ url }) => {
   let timeout;
 
   const doPoll = (handler) => {
-    fetch(`${url}${counter}`)
-      .then((data) => {
-        return data.json()
+    fetch(`${url}`)
+      .then((request) => {
+        if (request.ok) {
+          return request.json();
+        }
+
+        return doPoll(handler)
       })
       .then((json) => {
-        counter += 1;
-
-        
         handler(json);
 
         timeout = setTimeout(() => {
           doPoll(handler)
-        }, 100);
+        }, 300);
       });
   };
   
