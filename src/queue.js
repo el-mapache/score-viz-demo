@@ -71,7 +71,7 @@ class Queue {
 
   process() {
     if (this.paused || !this.workersAvailable()) {
-      return;
+      return Promise.resolve();
     }
 
     return Promise.resolve(this.dequeue());

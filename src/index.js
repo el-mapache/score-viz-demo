@@ -285,11 +285,11 @@ const flashBlack = () => {
       .animate(1, '-')
       .opacity(0.8)
       .animate(1, '-', 100)
-      .opacity(0)
+      .opacity(0);
       
-      squareMarker()
-
-      return resolve();
+      return squareMarker().then(() => {
+        return resolve();
+      });
   });
 };
 
