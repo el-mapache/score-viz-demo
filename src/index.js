@@ -243,18 +243,26 @@ let lastPercentageRevealed = 0;
 // weirdo code like this with nested afters?
 const runRevealAnimation = (percentToReveal, maskProps) => {
   return new Promise(function (resolve, _) {
-    const percentageDelta = Number((percentToReveal - lastPercentageRevealed).toFixed(2));
+    console.log(percentToReveal, lastPercentageRevealed)
+    const percentageDelta = Number((percentToReveal - lastPercentageRevealed));
     const numElementsToReveal = Math.floor(hexagonsInImage.length * percentageDelta);
     const tilesToReveal = hexagonsInImage.take(numElementsToReveal);
+    //const tilesToReveal = hexagonsInImage.take(1);
+    console.log(percentageDelta, percentToReveal, hexagonsInImage, numElementsToReveal)
 
     lastPercentageRevealed = percentToReveal;
 
     tilesToReveal.forEach(({ svg, memory }) => {
+      if (!svg) {
+        return;
+      }
+
       hexImageMask.add(svg.opacity(0));
 
       const { x, y } = memory.toPoint();
 
-      svg.animate(1000).opacity(0.2)
+      svg.animate(1000)
+        .opacity(0.2)
         .after(() => {
           svg.animate(2000).opacity(1)
           svg.translate(x, y);
@@ -312,6 +320,8 @@ const squareMarker = () => {
 const pq = PriorityQueue({ id: 'pq1' });
 let previousState = {};
 let changes = {};
+
+window.pq = pq;
 
 //runDisplayImages('series1', 'phrase1')
 connect()
