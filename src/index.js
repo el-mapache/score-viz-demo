@@ -168,12 +168,15 @@ let baseImageRef;
 let maskingImageRef;
 let hexImageMask;
 let scoreImageBorder;
-const backingGrid = createHexagonGrid();
-const hexagons = imageContainer.hexagonGroup(backingGrid);
+let backingGrid;
+let hexagons;
 
 function positionImagesAndMask(images) {
   [baseImageRef, maskingImageRef] = images;
   const baseImageBounds = baseImageRef.node.getBoundingClientRect();
+
+  backingGrid = createHexagonGrid({ width: baseImageBounds.width / 10, height: baseImageBounds.height / 10 });
+  hexagons = imageContainer.hexagonGroup(backingGrid);
   //const imageDisplayOffset = centerElement(bodyBox, baseImageBounds);
 
   hexImageMask = imageContainer.mask();
@@ -266,10 +269,9 @@ const runRevealAnimation = (percentToReveal, maskProps) => {
           svg.animate(2000).opacity(1)
           svg.translate(x, y);
           svg.animate(2500).fill(maskProps);
-
-          return resolve();
         });
     });
+    return resolve();
   })
     .catch((e) => {
       console.log('oops i did it again', e)
