@@ -7,7 +7,6 @@ import ShuffledList from './shuffled-list';
 import PriorityQueue from './priority-queue';
 import makePalette from './palette';
 import { centerElement, parseJSON, getRandomBetween } from './utils'
-import { nextTick } from 'q';
 
 const IMG_SCALE_FACTOR = 1.5;
 const SCORE_STROKE_WIDTH = 8;
@@ -23,7 +22,7 @@ const messageTypes = {
   END: 'end'
 };
 
-const canvasEl =  document.getElementById('svg-canvas');
+const canvasEl = document.getElementById('svg-canvas');
 const bodyBox = canvasEl.getBoundingClientRect();
 
 // Initialize the SVG container elements
@@ -46,16 +45,16 @@ const paletteF = '#185a9d';
 
 const colorPalettes = (() => {
   const palettes = new ShuffledList([
-   new ShuffledList(makePalette({
+    new ShuffledList(makePalette({
       colors: ['#e55d87', '#5fc3e4'],
       size: 6
     })),
     new ShuffledList(makePalette({
-      colors: [ '#ff512f', '#dd2476' ],
+      colors: ['#ff512f', '#dd2476'],
       size: 6
     })),
     new ShuffledList(makePalette({
-      colors: [ '#43cea2', '#185a9d' ],
+      colors: ['#43cea2', '#185a9d'],
       size: 6
     }))
   ]);
@@ -92,10 +91,10 @@ const stutterFilter = ((container) => {
   f.node.appendChild(g.node);
   f.node.appendChild(b.node);
   container.node.appendChild(f.node);
-  
+
   return {
     addTo(element) {
-      element.attr({ filter: `url(#${f.id()})`});
+      element.attr({ filter: `url(#${f.id()})` });
     },
     animate() {
       const scale = getRandomBetween(1, 25);
@@ -140,9 +139,9 @@ const selected = {};
 const paintImage = ({ svg, url, offset, size }) => {
   const image = size
     ? svg.image(url, size.width, size.height)
-    : svg.image(url).loaded(function(imgData) {
-        image.size(imgData.width, imgData.height);
-      });
+    : svg.image(url).loaded(function (imgData) {
+      image.size(imgData.width, imgData.height);
+    });
 
   if (offset) {
     image.translate(offset.x, offset.y);
@@ -152,15 +151,15 @@ const paintImage = ({ svg, url, offset, size }) => {
 };
 
 const loadImages = (...images) => {
-  return new Promise(function(resolve, _) {
+  return new Promise(function (resolve, _) {
     const imageTasks = images.map((name) => {
       return paintImage({
         svg: imageContainer,
         url: getImage(name),
-        size: { width: 600, height: 200 }
+        size: { width: 1080, height: 520 }
       });
     });
-    
+
     return Promise.all(imageTasks).then(resolve);
   });
 };
@@ -173,47 +172,49 @@ const backingGrid = createHexagonGrid();
 const hexagons = imageContainer.hexagonGroup(backingGrid);
 
 function positionImagesAndMask(images) {
-  [ baseImageRef, maskingImageRef ] = images;
+  [baseImageRef, maskingImageRef] = images;
   const baseImageBounds = baseImageRef.node.getBoundingClientRect();
-  const imageDisplayOffset = centerElement(bodyBox, baseImageBounds);
+  //const imageDisplayOffset = centerElement(bodyBox, baseImageBounds);
 
   hexImageMask = imageContainer.mask();
   rippleColorPalette = colorPalettes.getColorPalette();
 
   stutterFilter.addTo(baseImageRef);
 
-  hexagons.translate(
-    imageDisplayOffset.x,
-    imageDisplayOffset.y
-  );
+  // hexagons.translate(
+  //   Math.abs(imageDisplayOffset.x),
+  //   Math.abs(imageDisplayOffset.y)
+  // );
+  //console.log(imageDisplayOffset)
+  baseImageRef
+    //.translate(
+    //   Math.abs(imageDisplayOffset.x),
+    //   Math.abs(imageDisplayOffset.y)
+    // )
+    //   .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
+    //   // move image to the back of the canvas
+    .back();
 
-  baseImageRef.translate(
-    IMG_SCALE_FACTOR * 100,
-    imageDisplayOffset.y + IMG_SCALE_FACTOR * 100
-  )
-  .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
-  // move image to the back of the canvas
-  .back();
-
-  maskingImageRef.translate(
-    IMG_SCALE_FACTOR * 100,
-    imageDisplayOffset.y + IMG_SCALE_FACTOR * 100
-  )
-  .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR);
+  maskingImageRef
+  // .translate(
+  //   imageDisplayOffset.x,
+  //   imageDisplayOffset.y
+  // )
+  //.scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR);
 
   scoreImageBorder && scoreImageBorder.remove();
   // Add a rectangle around the image to generate a border effect
   scoreImageBorder = imageContainer.rect(
-    baseImageBounds.width * IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH,
-    baseImageBounds.height * IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH
+    baseImageBounds.width,// * IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH,
+    baseImageBounds.height// * IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH
   )
-  .fill({ color: 'transparent' })
-  .stroke({ width: SCORE_STROKE_WIDTH });
-  
+    .fill({ color: 'transparent' })
+    .stroke({ width: SCORE_STROKE_WIDTH });
+
   // Position DOM nodes relative to the image. We do this after load because we don't know how
   // large the image is, and thus we wouldn't know where to place it
   seriesInfoEl.setAttribute('style', `width: ${baseImageBounds.width}px; visibility: visible;`);
-  canvasEl.setAttribute('style', `height: ${baseImageBounds.height*IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH}px; min-width: 600px; width: ${baseImageBounds.width*IMG_SCALE_FACTOR + SCORE_STROKE_WIDTH}px`);
+  canvasEl.setAttribute('style', `height: ${baseImageBounds.height}px; min-width: 600px; width: ${baseImageBounds.width}px`);
 
   hexagonsInImage = new ShuffledList(
     getMaskOverlap(
@@ -222,7 +223,7 @@ function positionImagesAndMask(images) {
       maskingImageRef,
     )
   );
-  
+
   maskingImageRef.maskWith(hexImageMask);
 
   return Promise.resolve();
@@ -241,18 +242,18 @@ let lastPercentageRevealed = 0;
 // realistically, the queue should wrap everything in a promise? how to handle
 // weirdo code like this with nested afters?
 const runRevealAnimation = (percentToReveal, maskProps) => {
-  return new Promise(function(resolve, _) {
+  return new Promise(function (resolve, _) {
     const percentageDelta = Number((percentToReveal - lastPercentageRevealed).toFixed(2));
     const numElementsToReveal = Math.floor(hexagonsInImage.length * percentageDelta);
     const tilesToReveal = hexagonsInImage.take(numElementsToReveal);
 
     lastPercentageRevealed = percentToReveal;
 
-    tilesToReveal.forEach(({ svg, memory}) => {
+    tilesToReveal.forEach(({ svg, memory }) => {
       hexImageMask.add(svg.opacity(0));
-      
+
       const { x, y } = memory.toPoint();
-    
+
       svg.animate(1000).opacity(0.2)
         .after(() => {
           svg.animate(2000).opacity(1)
@@ -262,10 +263,13 @@ const runRevealAnimation = (percentToReveal, maskProps) => {
           return resolve();
         });
     });
-  });
+  })
+    .catch((e) => {
+      console.log('oops i did it again', e)
+    });
 };
 
-const fullscreenBox = (svg, opacity=0) =>
+const fullscreenBox = (svg, opacity = 0) =>
   svg.rect(bodyBox.width, bodyBox.height)
     .opacity(opacity)
     .style({
@@ -277,7 +281,7 @@ const fullscreenBox = (svg, opacity=0) =>
     });
 
 const square = fullscreenBox(syncMarkerContainer).style({ 'z-index': 0 });
-const blackFrame = fullscreenBox(syncMarkerContainer).style({'z-index': 1000});
+const blackFrame = fullscreenBox(syncMarkerContainer).style({ 'z-index': 1000 });
 
 const flashBlack = () => {
   return new Promise((resolve, _) => {
@@ -286,10 +290,10 @@ const flashBlack = () => {
       .opacity(0.8)
       .animate(1, '-', 100)
       .opacity(0);
-      
-      return squareMarker().then(() => {
-        return resolve();
-      });
+
+    return squareMarker().then(() => {
+      return resolve();
+    });
   });
 };
 
@@ -300,12 +304,12 @@ const squareMarker = () => {
       .opacity(0.5)
       .animate(1200, '<')
       .opacity(0);
-      
-      return resolve();
-    });
+
+    return resolve();
+  });
 };
 
-const pq = PriorityQueue({ id: 'pq1'});
+const pq = PriorityQueue({ id: 'pq1' });
 let previousState = {};
 let changes = {};
 
@@ -340,14 +344,14 @@ connect()
 
           baseImageRef && baseImageRef.remove();
           maskingImageRef && maskingImageRef.remove();
-  
+
           pq.pushHighPriority(runDisplayImages, null, `series${changes[messageTypes.SERIES]}`, `phrase${changes[messageTypes.SERIES]}`);
           seriesCounterEl.textContent = changes[messageTypes.SERIES];
 
           if (changes[messageTypes.MARKER]) {
             if (changes[messageTypes.MARKER]) {
               pq.pushHighPriority(flashBlack, null);
-            
+
               pq.pushHighPriority(function updateSyncMarkers() {
                 if (getRandomBetween(1, 2) % 2) {
                   stutterFilter.animate();
@@ -357,7 +361,7 @@ connect()
               });
             }
           }
-    
+
           if (changes[messageTypes.REVEAL]) {
             pq.pushLowPriority(
               runRevealAnimation,
@@ -366,11 +370,11 @@ connect()
               visibleMaskProps
             );
           }
-    
+
           if (changes[messageTypes.RTT]) {
             latencyCounterEl.textContent = changes[messageTypes.RTT]
           }
-    
+
           if (changes[messageTypes.END]) {
             pq.flush().then(() => {
               latencyCounterEl.textContent = '-';
@@ -382,7 +386,7 @@ connect()
         if (changes[messageTypes.MARKER]) {
           if (changes[messageTypes.MARKER]) {
             pq.pushHighPriority(flashBlack, null);
-          
+
             pq.pushHighPriority(function updateSyncMarkers() {
               if (getRandomBetween(1, 2) % 2) {
                 stutterFilter.animate();
@@ -413,56 +417,5 @@ connect()
           });
         }
       }
-
-        
-    //     switch(label) {
-    //       case messageTypes.MARKER:
-    //         pq.pushHighPriority(flashBlack, null);
-      
-    //         pq.pushHighPriority(function updateSyncMarkers() {
-    //           if (getRandomBetween(1, 2) % 2) {
-    //             stutterFilter.animate();
-    //           }
-    //           syncCounterEl.textContent = data;
-    //           return Promise.resolve()
-    //         });
-    //         break;
-    //       case messageTypes.REVEAL: 
-    //         pq.pushLowPriority(
-    //           runRevealAnimation,
-    //           null,
-    //           data,
-    //           hexagonsInImage,
-    //           hexImageMask,
-    //           visibleMaskProps
-    //         );
-    //         break;
-    //       case messageTypes.SERIES:
-    //         baseImageRef && baseImageRef.remove();
-    //         maskingImageRef && maskingImageRef.remove();
-
-    //         pq.pushHighPriority(runDisplayImages, null, `series${data}`, `phrase${data}`);
-    //         seriesCounterEl.textContent = data;
-
-    //         break;
-    //       case messageTypes.RTT:
-    //         latencyCounterEl.textContent = data
-    //         break;
-    //       case messageTypes.END:
-    //         if (data) {
-    //           debugger
-    //           pq.flush().then(() => {
-    //             latencyCounterEl.textContent = '-';
-    //             syncCounterEl.textContent = 0;
-    //           });
-    //         }
-    //         break;
-    //       default:
-    //         console.warn('Unknown message type :: ', data);
-    //         break;
-    //     }
-    //   }
-      
-    // });
     });
   });

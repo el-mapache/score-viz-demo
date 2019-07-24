@@ -6,7 +6,7 @@ const longPollAdapter = ({ url }) => {
   let timeout;
 
   const doPoll = (handler) => {
-    fetch(`${url}`)
+    return fetch(`${url}`)
       .then((request) => {
         if (request.ok) {
           return request.json();
@@ -22,7 +22,7 @@ const longPollAdapter = ({ url }) => {
         }, 300);
       });
   };
-  
+
   return Promise.resolve({
     listen(handler) {
       doPoll(handler);
@@ -35,7 +35,7 @@ const longPollAdapter = ({ url }) => {
 
 const webSocketAdapter = (() => {
   const socketConnectionURL = (url, port) => `${url}:${port}`;
-  
+
   return ({ url, port }) => {
     return new Promise((resolve, reject) => {
       const socket = new WebSocket(socketConnectionURL(url, port));
@@ -43,7 +43,7 @@ const webSocketAdapter = (() => {
       socket.onerror = (error) => {
         reject(error);
       };
-  
+
       socket.onopen = () => {
         resolve({
           listen(handler) {
@@ -62,18 +62,19 @@ const webSocketAdapter = (() => {
                */
               socket.onmessage = null;
             }
-      
+
             socket.onmessage = handler;
           },
-      
+
           unlisten() {
-            socket.onclose = function() {};
+            socket.onclose = function () { };
             socket.close();
           }
         }
-      );
-    };
-  })};
+        );
+      };
+    })
+  };
 })();
 
 const makeConnection = ({ url, fallbackURL, port }) => {
@@ -82,9 +83,9 @@ const makeConnection = ({ url, fallbackURL, port }) => {
   //     return Promise.resolve(socket);
   //   })
   //   .catch((e) => {
-      return Promise.resolve(longPollAdapter({ url: fallbackURL }));
-    //});
-  };
+  return Promise.resolve(longPollAdapter({ url: fallbackURL }));
+  //});
+};
 
 let singleton;
 
