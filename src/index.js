@@ -243,12 +243,11 @@ let lastPercentageRevealed = 0;
 // weirdo code like this with nested afters?
 const runRevealAnimation = (percentToReveal, maskProps) => {
   return new Promise(function (resolve, _) {
-    console.log(percentToReveal, lastPercentageRevealed)
     const percentageDelta = Number((percentToReveal - lastPercentageRevealed));
     const numElementsToReveal = Math.floor(hexagonsInImage.length * percentageDelta);
-    const tilesToReveal = hexagonsInImage.take(numElementsToReveal);
+    const tilesToReveal = hexagonsInImage.take(percentToReveal * 100);//numElementsToReveal);
     //const tilesToReveal = hexagonsInImage.take(1);
-    console.log(percentageDelta, percentToReveal, hexagonsInImage, numElementsToReveal)
+    console.log('delta', percentageDelta, '%reveal', percentToReveal, 'hexes', hexagonsInImage, 'num els', numElementsToReveal)
 
     lastPercentageRevealed = percentToReveal;
 
@@ -348,6 +347,7 @@ connect()
       }
 
       if (changes[messageTypes.SERIES]) {
+        lastPercentageRevealed = 0;
         pq.flush().then(() => {
           latencyCounterEl.textContent = '-';
           syncCounterEl.textContent = 0;

@@ -7,7 +7,7 @@ const createHexagonGrid = () => {
 
   // in-memory representation of a grid of hexagons, from which the
   // concrete hex grid will be rendered
-  return Grid.rectangle({ width: 20, height: 20 });
+  return Grid.rectangle({ width: 200, height: 200 });
 }
 
 
