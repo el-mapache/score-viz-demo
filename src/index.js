@@ -85,6 +85,14 @@ const stutterFilter = ((container) => {
   const g = new SVG.GaussianBlurEffect(0);
   const b = new SVG.BlendEffect(b, d.result());
 
+  /**
+   * This value indicates that all coordinates for the
+   * geometry preoperties refer to the user coordinate system
+   * as defined when the pattern was applied.
+   * 
+   * if i understand correctly this means the image wont stretch to fit
+   * the shape 
+   */
   d.attr({ filterUnits: "userSpaceOnUse", scale: 0 });
   f.node.appendChild(t.node);
   f.node.appendChild(d.node);
@@ -134,8 +142,6 @@ const getMaskOverlap = (grid, shapes, mask, offset = 0) => {
 
 let hexagonsInImage;
 
-const selected = {};
-
 const paintImage = ({ svg, url, offset, size }) => {
   const image = size
     ? svg.image(url, size.width, size.height)
@@ -177,28 +183,16 @@ function positionImagesAndMask(images) {
 
   backingGrid = createHexagonGrid({ width: baseImageBounds.width / 10, height: baseImageBounds.height / 10 });
   hexagons = imageContainer.hexagonGroup(backingGrid);
-  //const imageDisplayOffset = centerElement(bodyBox, baseImageBounds);
 
   hexImageMask = imageContainer.mask();
   rippleColorPalette = colorPalettes.getColorPalette();
 
   stutterFilter.addTo(baseImageRef);
 
-  // hexagons.translate(
-  //   Math.abs(imageDisplayOffset.x),
-  //   Math.abs(imageDisplayOffset.y)
-  // );
-  //console.log(imageDisplayOffset)
-  baseImageRef
-    //.translate(
-    //   Math.abs(imageDisplayOffset.x),
-    //   Math.abs(imageDisplayOffset.y)
-    // )
-    //   .scale(IMG_SCALE_FACTOR, IMG_SCALE_FACTOR)
-    //   // move image to the back of the canvas
-    .back();
+  // move image to the back of the canvas
+  baseImageRef.back();
 
-  maskingImageRef
+  // maskingImageRef
   // .translate(
   //   imageDisplayOffset.x,
   //   imageDisplayOffset.y
@@ -248,7 +242,7 @@ const runRevealAnimation = (percentToReveal, maskProps) => {
   return new Promise(function (resolve, _) {
     const percentageDelta = Number((percentToReveal - lastPercentageRevealed));
     const numElementsToReveal = Math.floor(hexagonsInImage.length * percentageDelta);
-    const tilesToReveal = hexagonsInImage.take(percentToReveal * 100);//numElementsToReveal);
+    const tilesToReveal = hexagonsInImage.take(percentToReveal * 100);
     //const tilesToReveal = hexagonsInImage.take(1);
     console.log('delta', percentageDelta, '%reveal', percentToReveal, 'hexes', hexagonsInImage, 'num els', numElementsToReveal)
 
