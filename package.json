@@ -19,7 +19,7 @@
     "svg.easing.js": "^2.0.0",
     "svg.filter.js": "^2.0.2",
     "svg.js": "2.7.1",
-    "ws": "^7.1.0"
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "@babel/core": "7.5.4",
